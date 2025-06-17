@@ -4,7 +4,9 @@
 
 #include "livox_laser_simulation/livox_points_plugin.h"
 #include <ros/ros.h>
-#include <sensor_msgs/PointCloud.h>
+// #include <sensor_msgs/PointCloud.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/point_cloud2_iterator.h>
 #include <gazebo/physics/Model.hh>
 #include <gazebo/physics/MultiRayShape.hh>
 #include <gazebo/physics/PhysicsEngine.hh>
@@ -56,7 +58,8 @@ void LivoxPointsPlugin::Load(gazebo::sensors::SensorPtr _parent, sdf::ElementPtr
     ROS_INFO_STREAM("ros topic name:" << curr_scan_topic);
     ros::init(argc, argv, curr_scan_topic);
     rosNode.reset(new ros::NodeHandle);
-    rosPointPub = rosNode->advertise<sensor_msgs::PointCloud>(curr_scan_topic, 5);
+    // rosPointPub = rosNode->advertise<sensor_msgs::PointCloud>(curr_scan_topic, 5);
+    rosPointPub = rosNode->advertise<sensor_msgs::PointCloud2>(curr_scan_topic, 5);
 
     raySensor = _parent;
     auto sensor_pose = raySensor->Pose();
@@ -126,10 +129,25 @@ void LivoxPointsPlugin::OnNewLaserScans() {
         auto verticle_min = VerticalAngleMin().Radian();
         auto verticle_incre = VerticalAngleResolution();
 
-        sensor_msgs::PointCloud scan_point;
+        // sensor_msgs::PointCloud scan_point;
+        sensor_msgs::PointCloud2 scan_point;
         scan_point.header.stamp = ros::Time::now();
         scan_point.header.frame_id = raySensor->Name();
-        auto &scan_points = scan_point.points;
+        // auto &scan_points = scan_point.points;
+
+        scan_point.height = 1;
+        scan_point.width = points_pair.size();
+        scan_point.is_dense = true;
+        scan_point.is_bigendian = false;
+
+        sensor_msgs::PointCloud2Modifier modifier(scan_point);
+        modifier.setPointCloud2FieldsByString(1, "xyz");
+        modifier.resize(points_pair.size());
+
+        sensor_msgs::PointCloud2Iterator<float> iter_x(scan_point, "x");
+        sensor_msgs::PointCloud2Iterator<float> iter_y(scan_point, "y");
+        sensor_msgs::PointCloud2Iterator<float> iter_z(scan_point, "z");
+
 
         for (auto &pair : points_pair) {
             //int verticle_index = roundf((pair.second.zenith - verticle_min) / verticle_incre);
@@ -157,10 +175,17 @@ void LivoxPointsPlugin::OnNewLaserScans() {
 
                 auto axis = ray * ignition::math::Vector3d(1.0, 0.0, 0.0);
                 auto point = range * axis;
-                scan_points.emplace_back();
-                scan_points.back().x = point.X();
-                scan_points.back().y = point.Y();
-                scan_points.back().z = point.Z();
+                // scan_points.emplace_back();
+                // scan_points.back().x = point.X();
+                // scan_points.back().y = point.Y();
+                // scan_points.back().z = point.Z();
+                *iter_x = point.X();
+                *iter_y = point.Y();
+                *iter_z = point.Z();
+                ++iter_x;
+                ++iter_y;
+                ++iter_z;
+
             //} else {
 
             //    //                ROS_INFO_STREAM("count is wrong:" << verticle_index << "," << verticalRayCount << ","
@@ -341,8 +366,8 @@ void LivoxPointsPlugin::SendRosTf(const ignition::math::Pose3d &pose, const std:
     auto pos = pose.Pos();
     tf.setRotation(tf::Quaternion(rot.X(), rot.Y(), rot.Z(), rot.W()));
     tf.setOrigin(tf::Vector3(pos.X(), pos.Y(), pos.Z()));
-    tfBroadcaster->sendTransform(
-        tf::StampedTransform(tf, ros::Time::now(), raySensor->ParentName(), raySensor->Name()));
+    // tfBroadcaster->sendTransform(
+        // tf::StampedTransform(tf, ros::Time::now(), raySensor->ParentName(), raySensor->Name()));
 }
 
 }
