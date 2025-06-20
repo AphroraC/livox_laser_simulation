@@ -9,12 +9,16 @@
 #include <gazebo/plugins/RayPlugin.hh>
 #include "livox_ode_multiray_shape.h"
 
-namespace gazebo {
 struct AviaRotateInfo {
     double time;
     double azimuth;
     double zenith;
 };
+
+namespace gazebo {
+
+void convertDataToRotateInfo(const std::vector<std::vector<double>> &datas,
+   std::vector<AviaRotateInfo> &avia_infos);
 
 class LivoxPointsPlugin : public RayPlugin {
  public:
@@ -22,9 +26,11 @@ class LivoxPointsPlugin : public RayPlugin {
 
     virtual ~LivoxPointsPlugin();
 
-    void Load(sensors::SensorPtr _parent, sdf::ElementPtr _sdf);
+ protected:
+    virtual void Load(sensors::SensorPtr _parent, sdf::ElementPtr _sdf) = 0;
 
- private:
+    virtual void OnNewLaserScans() = 0;
+
     ignition::math::Angle AngleMin() const;
 
     ignition::math::Angle AngleMax() const;
@@ -69,10 +75,6 @@ class LivoxPointsPlugin : public RayPlugin {
 
     double VerticalAngleResolution() const;
 
- protected:
-    virtual void OnNewLaserScans();
-
- private:
     void InitializeRays(std::vector<std::pair<int, AviaRotateInfo>>& points_pair,
                         boost::shared_ptr<physics::LivoxOdeMultiRayShape>& ray_shape);
 
