@@ -38,6 +38,8 @@ Run
 to see.
 
 We can choose the lidar model by selecting different CSV file in scan_mode dir from changing the launch file:
+- HAP.csv
+- mid360.csv
 - avia.csv
 - horizon.csv
 - mid40.csv
